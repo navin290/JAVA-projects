@@ -1,0 +1,267 @@
+Ticket Booking System
+Project Structure:
+
+    Entities: Event, Ticket, User
+    Repositories: EventRepository, TicketRepository, UserRepository
+    Services: BookingService
+    Main Application: TicketBookingApplication
+
+CODE:
+
+1 Event Entity:
+         public class Event {
+    private Long id;
+    private String name;
+    private int availableTickets;
+
+    // Constructor, Getters, Setters
+    public Event(Long id, String name, int availableTickets) {
+        this.id = id;
+        this.name = name;
+        this.availableTickets = availableTickets;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getAvailableTickets() {
+        return availableTickets;
+    }
+
+    public void setAvailableTickets(int availableTickets) {
+        this.availableTickets = availableTickets;
+    }
+}
+
+
+
+2 Ticket Entity:
+      public class Ticket {
+    private Long id;
+    private Event event;
+    private String userName;
+
+    // Constructor, Getters, Setters
+    public Ticket(Long id, Event event, String userName) {
+        this.id = id;
+        this.event = event;
+        this.userName = userName;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Event getEvent() {
+        return event;
+    }
+
+    public void setEvent(Event event) {
+        this.event = event;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+}
+3 User Entity:
+
+    public class User {
+    private Long id;
+    private String name;
+
+    // Constructor, Getters, Setters
+    public User(Long id, String name) {
+        this.id = id;
+        this.name = name;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+}
+4 Repositories:
+import java.util.HashMap;
+import java.util.Map;
+
+public class EventRepository {
+    private Map<Long, Event> events = new HashMap<>();
+
+    public void addEvent(Event event) {
+        events.put(event.getId(), event);
+    }
+
+    public Event getEvent(Long id) {
+        return events.get(id);
+    }
+
+    public Map<Long, Event> getAllEvents() {
+        return events;
+    }
+}
+
+public class TicketRepository {
+    private Map<Long, Ticket> tickets = new HashMap<>();
+    private Long nextId = 1L;
+
+    public Ticket bookTicket(Event event, String userName) {
+        Ticket ticket = new Ticket(nextId++, event, userName);
+        tickets.put(ticket.getId(), ticket);
+        return ticket;
+    }
+
+    public Ticket getTicket(Long id) {
+        return tickets.get(id);
+    }
+}
+
+public class UserRepository {
+    private Map<Long, User> users = new HashMap<>();
+
+    public void addUser(User user) {
+        users.put(user.getId(), user);
+    }
+
+    public User getUser(Long id) {
+        return users.get(id);
+    }
+}
+5 Booking Service:
+public class BookingService {
+    private EventRepository eventRepository;
+    private TicketRepository ticketRepository;
+    private UserRepository userRepository;
+
+    public BookingService(EventRepository eventRepository, TicketRepository ticketRepository, UserRepository userRepository) {
+        this.eventRepository = eventRepository;
+        this.ticketRepository = ticketRepository;
+        this.userRepository = userRepository;
+    }
+
+    public Ticket bookTicket(Long eventId, Long userId) {
+        Event event = eventRepository.getEvent(eventId);
+        User user = userRepository.getUser(userId);
+
+        if (event != null && user != null && event.getAvailableTickets() > 0) {
+            event.setAvailableTickets(event.getAvailableTickets() - 1);
+            return ticketRepository.bookTicket(event, user.getName());
+        } else {
+            throw new IllegalArgumentException("Invalid booking request");
+        }
+    }
+
+    public Map<Long, Event> getAllEvents() {
+        return eventRepository.getAllEvents();
+    }
+
+    public Ticket getTicket(Long ticketId) {
+        return ticketRepository.getTicket(ticketId);
+    }
+}
+6 Main Application:
+
+import java.util.Scanner;
+
+public class TicketBookingApplication {
+    public static void main(String[] args) {
+        EventRepository eventRepository = new EventRepository();
+        TicketRepository ticketRepository = new TicketRepository();
+        UserRepository userRepository = new UserRepository();
+        BookingService bookingService = new BookingService(eventRepository, ticketRepository, userRepository);
+
+        eventRepository.addEvent(new Event(1L, "Concert", 100));
+        eventRepository.addEvent(new Event(2L, "Movie", 50));
+        
+        userRepository.addUser(new User(1L, "Alice"));
+        userRepository.addUser(new User(2L, "Bob"));
+
+        Scanner scanner = new Scanner(System.in);
+
+        while (true) {
+            System.out.println("1. View Events");
+            System.out.println("2. Book Ticket");
+            System.out.println("3. View Ticket");
+            System.out.println("4. Exit");
+
+            int choice = scanner.nextInt();
+
+            switch (choice) {
+                case 1:
+                    System.out.println("Available Events:");
+                    for (Event event : bookingService.getAllEvents().values()) {
+                        System.out.println(event.getId() + ": " + event.getName() + " (" + event.getAvailableTickets() + " tickets available)");
+                    }
+                    break;
+
+                case 2:
+                    System.out.println("Enter event ID:");
+                    Long eventId = scanner.nextLong();
+                    System.out.println("Enter user ID:");
+                    Long userId = scanner.nextLong();
+
+                    try {
+                        Ticket ticket = bookingService.bookTicket(eventId, userId);
+                        System.out.println("Ticket booked successfully: " + ticket.getId());
+                    } catch (IllegalArgumentException e) {
+                        System.out.println(e.getMessage());
+                    }
+                    break;
+
+                case 3:
+                    System.out.println("Enter ticket ID:");
+                    Long ticketId = scanner.nextLong();
+                    Ticket ticket = bookingService.getTicket(ticketId);
+                    if (ticket != null) {
+                        System.out.println("Ticket ID: " + ticket.getId());
+                        System.out.println("Event: " + ticket.getEvent().getName());
+                        System.out.println("User: " + ticket.getUserName());
+                    } else {
+                        System.out.println("Ticket not found");
+                    }
+                    break;
+
+                case 4:
+                    System.exit(0);
+
+                default:
+                    System.out.println("Invalid choice");
+            }
+        }
+    }
+}
+
+
+   
