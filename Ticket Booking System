@@ -1,0 +1,7 @@
+Ticket Booking System
+Project Structure:
+
+    Entities: Event, Ticket, User
+    Repositories: EventRepository, TicketRepository, UserRepository
+    Services: BookingService
+    Main Application: TicketBookingApplication
